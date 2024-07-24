@@ -1,4 +1,4 @@
-export function displayDialoge(text, onDisplayEnd) {
+export function displayDialogue(text, onDisplayEnd) {
   const dialogueUI = document.getElementById("textbox-container");
   const dialogue = document.getElementById("dialogue");
 
@@ -15,7 +15,7 @@ export function displayDialoge(text, onDisplayEnd) {
     }
 
     clearInterval(intervalRef);
-  }, 5);
+  }, 1);
 
   const closeBtn = document.getElementById("close");
 

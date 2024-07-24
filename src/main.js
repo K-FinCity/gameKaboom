@@ -1,6 +1,6 @@
-import { scaleFactor } from "./constants";
+import { dialogueData, scaleFactor } from "./constants";
 import { k } from "./kaboomCtx";
-import { displayDialoge } from "./utils";
+import { displayDialogue, setCamScale } from "./utils";
 
 k.loadSprite("spritesheet", "./spritesheet.png", {
   sliceX: 39,
@@ -33,9 +33,9 @@ k.scene("main", async () => {
     k.pos(),
     k.scale(scaleFactor),
     {
-      speed: 600,
+      speed: 400,
       direction: "down",
-      isInDialoge: false,
+      isInDialogue: false,
     },
     "player",
   ]);
@@ -51,10 +51,14 @@ k.scene("main", async () => {
           k.pos(boundary.x, boundary.y),
           boundary.name,
         ]);
+
         if (boundary.name) {
           player.onCollide(boundary.name, () => {
-            player.isInDialoge = true;
-            displayDialoge("TODO", () => (player.isInDialoge = false));
+            player.isInDialogue = true;
+            displayDialogue(
+              dialogueData[boundary.name],
+              () => (player.isInDialogue = false)
+            );
           });
         }
       }
@@ -74,16 +78,75 @@ k.scene("main", async () => {
     }
   }
 
+  setCamScale(k);
+
+  k.onResize(() => {
+    setCamScale(k);
+  });
+
   k.onUpdate(() => {
-    k.camPos(player.worldPos().x, player.worldPos().y - 100);
+    k.camPos(player.pos.x, player.pos.y + 100);
   });
 
   k.onMouseDown((mouseBtn) => {
-    if (mouseBtn !== "left" || player.isInDialoge) return;
+    if (mouseBtn !== "left" || player.isInDialogue) return;
 
     const worldMousePos = k.toWorld(k.mousePos());
     player.moveTo(worldMousePos, player.speed);
+
+    const mouseAngle = player.pos.angle(worldMousePos);
+    const lowerBound = 50;
+    const upperBound = 125;
+
+    if (
+      mouseAngle > lowerBound &&
+      mouseAngle < upperBound &&
+      player.curAnim() !== "walk-up"
+    ) {
+      player.play("walk-up");
+      player.direction = "up";
+      return;
+    }
+
+    if (Math.abs(mouseAngle) > upperBound) {
+      player.flipX = false;
+      if (player.curAnim() !== "walk-side") player.play("walk-side");
+      player.direction = "right";
+      return;
+    }
+
+    if (Math.abs(mouseAngle) < lowerBound) {
+      player.flipX = true;
+      if (player.curAnim() !== "walk-side") player.play("walk-side");
+      player.direction = "left";
+      return;
+    }
+
+    if (
+      mouseAngle < -lowerBound &&
+      mouseAngle > -upperBound &&
+      player.curAnim() !== "walk-down"
+    ) {
+      player.play("walk-down");
+      player.direction = "down";
+      return;
+    }
   });
+
+  function stopAnims() {
+    if (player.direction === "down") {
+      player.play("idle-down");
+      return;
+    }
+    if (player.direction === "up") {
+      player.play("idle-up");
+      return;
+    }
+
+    player.play("idle-side");
+  }
+
+  k.onMouseRelease(stopAnims);
 });
 
 k.go("main");
